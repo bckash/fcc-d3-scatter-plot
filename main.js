@@ -3,6 +3,12 @@ const chartWidth = 1000;
 const chartHeight = 800;
 const chartPadding = 50;
 
+const toolTip = d3
+    .select("#title")
+    .append("dl")
+    .attr("id", "tooltip")
+    .style("display", "none");
+
 
 document.addEventListener("DOMContentLoaded", () => {
     const req = new XMLHttpRequest();
@@ -16,21 +22,13 @@ document.addEventListener("DOMContentLoaded", () => {
         // date to string :
         const formatTime = d3.timeFormat("%M:%S")
         const parseYear = d3.timeParse("%Y")
-        // array of date objects :
-        const dataset = json.map( d => [parseYear(d.Year), parseTime(d.Time)])
-        console.log(dataset)
         
         // data for defining axis
 
         let dataTimeFirst = parseTime(json[0].Time);
         let dataTimeLast = parseTime(json[json.length-1].Time)
         let dataYearFirst = parseYear(d3.min(json, d => d.Year - 1))
-        let dataYearLast = parseYear(d3.max(json, d => d.Year))
-
-        console.dir(dataTimeFirst)
-        console.dir(dataTimeLast)
-        console.dir(dataYearFirst)
-        console.dir(dataYearLast)
+        let dataYearLast = parseYear(d3.max(json, d => d.Year + 1))
 
         // X
 
@@ -75,17 +73,44 @@ document.addEventListener("DOMContentLoaded", () => {
 
             svg
             .selectAll("circle")
-            .data(dataset)
+            .data(json)
             .enter()
             .append("circle")
             .attr("class", "dot")
-            .attr("data-xvalue", d => d[0])
-            .attr("data-yvalue", d => d[1])
-            .attr("cx", d => xScale(d[0]))
-            .attr("cy", d => yScale(d[1]))
-            .attr("r", 5)
+            .attr("data-xvalue", d => parseYear(d.Year))
+            .attr("data-yvalue", d => parseTime(d.Time))
+            .attr("cx", d => xScale(parseYear(d.Year)))
+            .attr("cy", d => yScale(parseTime(d.Time)))
+            .attr("r", 6)
+            .style("fill", d => d.Doping === "" ? "cornflowerblue" : "chocolate")
+            .style("stroke", "black")
+            .style("opacity",".8")
+            .on("mouseover", () => {
+                toolTip
+                    .style("display", "block")
+            })
+            .on("mousemove", (ev,d) => {
+                toolTip
+                .html(`
+                    <p>${d.Name}, ${d.Nationality}</p>
+                    <div>
+                        <dt>${Object.keys(d)[4]} : </dt>
+                        <dd>${d.Year}</dd>
+                    </div>
+                    <div>
+                        <dt>${Object.keys(d)[0]} : </dt>
+                        <dd>${d.Time}</dd>
+                    </div>
+                    `)
+                .attr("data-year", parseYear(d.Year))
+                .style("right", window.innerWidth - ev.pageX - 100 + "px")
+                .style("top", ev.pageY + "px")
+            })
+            .on("mouseleave", () => {
+                toolTip
+                    .style("display","none")
+            })
 
-            console.log([json[0].Time, json[0].Year])
     } 
 
     
